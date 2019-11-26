@@ -3,7 +3,7 @@
 
   Eric K.
 
-  November 24, 2019
+  November 25, 2019
 
   Components:
 
@@ -46,6 +46,12 @@
     JST Pin 3 (Red wire)    => Arduino 5VDC
     JST Pin 4 (Yellow wire) => Arduino Digital Pin 8
 
+  LED Connections:
+
+    RGB LED Red Pin    to 14
+    RGB LED Green Pin  to 12
+    RGB LED Blue Pin   to 13
+
   Development environment specifics:
     - Arduino IDE 1.8.10
     - Generic ESP8266 board package 2.4.2
@@ -83,7 +89,7 @@
 // User Defined Variables
 // ----------------------------------------------------------------- //
 // |
-const String INFLUXDB_HOST = "192.0.2.12";  // InfluxDB server       //
+const String INFLUXDB_HOST = "192.0.2.11";  // InfluxDB server       //
 const String INFLUXDB_PORT = "8086";        // InfluxDB port         //
 const String INFLUXDB_DB   = "airquality";  // Database name         //
 const char* WIFI_SSID      = "Linksys";     // Wireless network name //
@@ -92,7 +98,10 @@ int read_interval          = 30;            // Time in seconds between measureme
 // |
 
 // ----------------------------------------------------------------- //
-const String VER = "0.1";
+const String VER = "0.1.1";
+int red_light_pin= 14;
+int green_light_pin = 12;
+int blue_light_pin = 13;
 
 CCS811 mySensor(CCS811_ADDR);
 
@@ -119,6 +128,10 @@ void setup()
 {
   // Serial debug
   Serial.begin(9600);
+
+  setLEDcolor('off');
+
+  setLEDcolor('white');
 
   Serial.println();
   Serial.println("---------------------------------");
@@ -206,6 +219,7 @@ void setup()
   */
   
   Serial.println("| - Setup completed");
+  setLEDcolor('off');
 }
 
 // Loop 
@@ -215,6 +229,8 @@ void loop()
 {
   Serial.println("--------------LOOP---------------");
 
+  setLEDcolor('off');
+  
   String INFLUX_POST = "";  // Initialize empty variable for HTTP post
   
   // W-Fi Initialization
@@ -382,9 +398,12 @@ void startWIFI(void)
 
   while (WiFi.status() != WL_CONNECTED)
   {
+    setLEDcolor('yellow');
     count--;
     Serial.print(".");
-    delay(1000);
+    delay(500);
+    setLEDcolor('off');
+    delay(500);
     if (count == 0)
     {
       Serial.println();
@@ -432,7 +451,10 @@ void postToInflux(String INFLUXDB_HOST, String INFLUXDB_PORT, String INFLUXDB_DB
     if (httpCode == 204)
     {
       // HTTP header has been send and Server response header has been handled
+      setLEDcolor('green');
       Serial.printf("[HTTP] POST SUCCESS!");
+      delay(1000);
+      setLEDcolor('off');
     } else {
       // HTTP header has been send and Server response header has been handled
       Serial.printf("[HTTP] POST... code: %d\n", httpCode);
@@ -446,9 +468,57 @@ void postToInflux(String INFLUXDB_HOST, String INFLUXDB_PORT, String INFLUXDB_DB
     }
   } else {
     Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
+    setLEDcolor('red');
+    delay(1000);
+    setLEDcolor('off');
   }
 
   http.end();
 
   //return httpCode;
+}
+void setLEDcolor(char color)
+{
+  switch (color) 
+  {
+    case 'off':
+      digitalWrite(red_light_pin,HIGH);
+      digitalWrite(green_light_pin,HIGH);
+      digitalWrite(blue_light_pin,HIGH);
+      break;
+    case 'white':
+      digitalWrite(red_light_pin,LOW);
+      digitalWrite(green_light_pin,LOW);
+      digitalWrite(blue_light_pin,LOW);
+      break;
+    case 'red':
+      digitalWrite(red_light_pin,LOW);
+      digitalWrite(green_light_pin,HIGH);
+      digitalWrite(blue_light_pin,HIGH);
+      break;
+    case 'yellow':
+      digitalWrite(red_light_pin,LOW);
+      digitalWrite(green_light_pin,LOW);
+      digitalWrite(blue_light_pin,HIGH);
+      break;
+    case 'green':
+      digitalWrite(red_light_pin,HIGH);
+      digitalWrite(green_light_pin,LOW);
+      digitalWrite(blue_light_pin,HIGH);
+      break;
+    case 'blue':
+      digitalWrite(red_light_pin,HIGH);
+      digitalWrite(green_light_pin,HIGH);
+      digitalWrite(blue_light_pin,LOW);
+      break;
+    case 'purple':
+      digitalWrite(red_light_pin,LOW);
+      digitalWrite(green_light_pin,HIGH);
+      digitalWrite(blue_light_pin,LOW);
+      break;
+    default:
+      // if nothing else matches, do the default
+      // default is optional
+      break;
+   }
 }
